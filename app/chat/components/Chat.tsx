@@ -1,10 +1,11 @@
 "use client"
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Input } from "@/components/ui/input"
 import { api } from "@/convex/_generated/api"
 import { Id } from "@/convex/_generated/dataModel"
 import { useMutation, useQuery } from "convex/react"
 import useMoodStore from '@/app/store/useMoodStore'
+import { useRouter } from "next/navigation";
 const mockMessages = [
   {
     _id: "msg1",
@@ -39,15 +40,19 @@ const mockMessages = [
 ];
 
 const names = ["࣪당신은 것입니다","어느날 치유되다"]
+
+
 function Chat({id}:{id:string}) {
 
   const userId = useMoodStore(state=>state.userId)
   console.log(userId," userId")
   const messages = useQuery(api.messages.get,{id:id as Id<"chatRoom">});
   const [txt,setTxt]=useState("")
+  const [secLeft,setSecLeft]=useState(60)
   const sendMsg = useMutation(api.messages.send)
 
   const chatRoom = useQuery(api.chatRoom.get,{id: id as Id<"chatRoom">})
+  const router = useRouter();
 
 
   const displayName = (userId: string) => {
@@ -55,6 +60,27 @@ function Chat({id}:{id:string}) {
    console.log(index)
   return index !==undefined && index>-1 ? names[index] : "Anonymous";
 };
+
+useEffect(()=>{
+if(chatRoom?.participants.length==2){
+  const interval = setInterval(()=>{
+    setSecLeft(prev=>prev-1)
+  }, 1000)
+
+  return ()=>clearInterval(interval)
+}
+
+},[chatRoom])
+
+
+useEffect(()=>{
+if(secLeft==0){
+ router.push(`/`);
+}
+
+},[secLeft])
+console.log(chatRoom," userId")
+
 
 if(chatRoom?.participants.length==1){
   return (
@@ -64,7 +90,6 @@ if(chatRoom?.participants.length==1){
   )
 }
 
-console.log(chatRoom," userId")
   return (
    <div className="w-full min-h-screen text-white  font-semibold  justify-end  flex flex-col pb-20">
     <div className='flex flex-row gap-3 border-2'>
@@ -74,8 +99,9 @@ console.log(chatRoom," userId")
    <span key={u.id} className={`w-[150px] flex flex-col overflow-hidden px-[10px] ${u.id !==userId ? "text-[#1b549d]":""}`}  style={{backgroundColor:u.id !== userId ? "white":"",
       
     }}>
-        {displayName(u.id as string) } <span className='flex flex-row gap-2'> {u.mood} {u.id === userId ? "(you)":""}  </span>   
+        {displayName(u.id as string) } <span className='flex flex-row gap-2'> {u.mood} {u.id === userId ? "(you)":""}   {secLeft}  </span>   
         </span>
+        
 )
   
 }
